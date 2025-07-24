@@ -8,19 +8,25 @@ const client = generateClient<Schema>();
 function App() {
   const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
   const { signOut } = useAuthenticator();
-    useEffect(() => {
- client.models.Todo.observeQuery().subscribe({
+
+  useEffect(() => {
+    const subscription = client.models.Todo.observeQuery().subscribe({
       next: (data) => setTodos([...data.items]),
     });
-}, []);
-function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  function createTodo() {
+    const content = window.prompt("Todo content");
+    if (!content) return;
+    client.models.Todo.create({ content });
   }
-   
+
   function deleteTodo(id: string) {
-       client.models.Todo.delete({ id })
+    client.models.Todo.delete({ id });
   }
-   return (
+
+  return (
     <main>
       <h1>My todos</h1>
       <button onClick={createTodo}>+ new</button>
@@ -34,7 +40,10 @@ function createTodo() {
       <div>
         🥳 App successfully hosted. Try creating a new todo.
         <br />
-         <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
+        <a
+          href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates"
+          target="_blank"
+        >
           Review next step of this tutorial.
         </a>
       </div>
@@ -42,3 +51,5 @@ function createTodo() {
     </main>
   );
 }
+
+export default App;
