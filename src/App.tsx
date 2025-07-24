@@ -7,40 +7,53 @@ const client = generateClient<Schema>();
 
 function App() {
   const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
-    const { signOut } = useAuthenticator();
+  const { signOut } = useAuthenticator();
 
   useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
+    const subscription = client.models.Todo.observeQuery().subscribe({
       next: (data) => setTodos([...data.items]),
     });
+    return () => subscription.unsubscribe(); // ✅ avoid memory leaks
   }, []);
 
   function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
+    const content = window.prompt("Todo content");
+    if (!content) return;
+
+    try {
+      client.models.Todo.create({ content });
+    } catch (err) {
+      console.error("Failed to create todo", err);
+    }
   }
-  
+
   function deleteTodo(id: string) {
-    client.models.Todo.delete({ id })
+    try {
+      client.models.Todo.delete({ id });
+    } catch (err) {
+      console.error("Failed to delete todo", err);
+    }
   }
+
   return (
     <main>
       <h1>My todos</h1>
       <button onClick={createTodo}>+ new</button>
-     <ul>
-  {todos.map((todo) => (
-    <li key={todo.id} onClick={() => deleteTodo(todo.id)}>
-      {todo.content}
-    </li>
-  ))}
-</ul>
+      <ul>
+        {todos.map((todo) => (
+          <li key={todo.id} onClick={() => deleteTodo(todo.id)}>
+            {todo.content}
+          </li>
+        ))}
+      </ul>
       <div>
         🥳 App successfully hosted. Try creating a new todo.
         <br />
-        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
+        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates" target="_blank">
           Review next step of this tutorial.
         </a>
       </div>
-            <button onClick={signOut}>Sign out</button>
+      <button onClick={signOut}>Sign out</button>
     </main>
   );
 }
